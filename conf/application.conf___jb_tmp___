@@ -369,7 +369,7 @@ db.default.driver=org.postgresql.Driver
 db.default.url=${?JDBC_DATABASE_URL}
 db.default.username=${?JDBC_DATABASE_USERNAME}
 db.default.password=${?JDBC_DATABASE_PASSWORD}
-play.defau
+play.evolutions.db.default.autoApply=true
 
 #db.default.url=${DATABASE_URL}
 
