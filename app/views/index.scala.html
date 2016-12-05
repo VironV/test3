@@ -1,0 +1,11 @@
+@(test: String)
+
+@import helper._
+
+
+@main("Welcome to Play") {
+
+    <h1>Hello, @test!</h1>
+    <a href='@routes.MapInfoController.maps()'>Go to map managing!</a>
+
+}

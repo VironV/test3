@@ -1,0 +1,66 @@
+@import helper._
+@import views.html.helper
+
+@(maps: List[models.MapInfo], myForm: Form[controllers.MapInfoController.FormData])
+
+@main("Map List") {
+    <a href='@routes.MapInfoController.maps()'>Header to maps</a>
+    @if(flash.containsKey("error")) {
+        <font color="red">@flash.get("error")</font>
+    }
+    <h1>Map list</h1>
+
+    <table>
+        <tr>
+            <th>Name     </th>
+            <th>  Uploaded?    </th>
+            <th>  Last upload    </th>
+            <th>  Last sync    </th>
+            <th>  Sync success?    </th>
+            <th>  Downloads    </th>
+            <th>  Actions</th>
+        </tr>
+        @for(map <- maps) {
+        <tr>
+            <td>| @map.name  </td>
+            <td>| @map.is_uploaded  </td>
+            <td>| @( if (map.upload_date!=null) { map.upload_date.format("dd.MM.yyyy")}) </td>
+            <td>| @( if (map.sync_date!=null) { map.sync_date.format("dd.MM.yyyy")})  </td>
+            <td>| @map.sync_success  </td>
+            <td>| @map.downloads_count </td>
+            <td>
+                @form(routes.MapInfoController.downloadMap(map.id)) {
+                    <input type="submit" value="Download">}
+                @form(routes.UpdateRequestsController.updateMap(map.id)) {
+                    <input type="submit" value="Update">}
+                @form(routes.MapInfoController.deleteMap(map.id)) {
+                    <input type="submit" value="Delete">}
+            </td>
+        </tr>
+        }
+    </table>
+
+    <h2>Add a new map</h2>
+    @helper.form(action = routes.MapInfoController.newMap()) {
+        @helper.inputText(myForm("name"))
+        <input type="submit" value="Create">
+    }
+
+    <h2>Update all maps</h2>
+    @helper.form(action = routes.UpdateRequestsController.updateAll()) {
+        <input type="submit" value="Update all">
+    }
+
+    <h2>Add all records</h2>
+    @helper.form(action = routes.MapInfoController.addAllMapInfo()) {
+        <input type="submit" value="Add all maps">
+    }
+    <h2>Add Russia records</h2>
+    @helper.form(action = routes.MapInfoController.addRussiaMapInfo()) {
+        <input type="submit" value="Add all Russia maps">
+    }
+    <h2>Delete all records</h2>
+    @helper.form(action = routes.MapInfoController.deleteAll()) {
+        <input type="submit" value="Delete all maps">
+    }
+}
