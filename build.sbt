@@ -17,4 +17,4 @@ libraryDependencies ++= Seq(
 lazy val myProject = (project in file("."))
   .enablePlugins(PlayJava, PlayEbean)
 
-herokuAppName in Compile := "pure-beach-43662"
+herokuAppName in Compile := "young-caverns-14974"
