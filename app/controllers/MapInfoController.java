@@ -74,6 +74,12 @@ public class MapInfoController extends Controller {
         }
     }
 
+    public Result newMap_url(String name){
+        name=name.replace(".mwm","");
+        addNewMapInfo(name);
+        return redirect(routes.MapInfoController.maps());
+    }
+
     public Result deleteMap(Long id) {
         MapInfo map = getMapById(id);
         if (map==null) {

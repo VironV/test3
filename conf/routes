@@ -25,5 +25,7 @@ GET    /maps/addall                    controllers.MapInfoController.addAllMapIn
 
 GET    /maps/addrussia                 controllers.MapInfoController.addRussiaMapInfo
 
-GET    /maps/android/:file    controllers.MapInfoController.sendByRequest(file: String)
+GET     /maps/add/:name                 controllers.MapInfoController.newMap_url(name: String)
+
+GET    /maps/android/:file              controllers.MapInfoController.sendByRequest(file: String)
 

@@ -104,6 +104,8 @@ public class UpdateRequestsController extends Controller {
 
         // Updating
         List<MapInfo> maps = MIC.getAllMaps();
+        if (maps==null)
+            return;
         for (MapInfo map: maps) {
             updateMap_logic(map,servers,version_outdated);
         }
