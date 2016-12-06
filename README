@@ -1,4 +1,29 @@
-Test application
+Test application: map storage
 =================================
 
+Database with meta info (name, date of uploading, sync status...)
++
+Local map files storage
 
+================================
+2 ways of usage:
+
+A).../maps  -> using visual interface
+
+B) Using requests:
+
+---../maps/addall                   -> add all maps info to database (without files)
+
+---../maps/addrussia                -> add all russia maps info to database (without files)
+
+---../maps/add/{name}               -> add map info with name {name} (".mwm" - optional)
+
+---../maps/update/{name}            -> update map (download newest file) with name {name], if record in database exits
+
+---../maps/updateall                -> update all maps that have records in database
+
+---../maps/deleteall                -> delete all records and files
+
+---../maps/delete/{name}            -> TODO
+
+---../maps/android/{name}           -> download map file with {name} to yout machine
