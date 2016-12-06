@@ -24,6 +24,6 @@ B) Using requests:
 
 ---../maps/deleteall                -> delete all records and files
 
----../maps/delete/{name}            -> TODO
+---../maps/delete/{name}            -> delete map {name} (file and record)
 
 ---../maps/android/{name}           -> download map file with {name} to yout machine

@@ -11,9 +11,11 @@ POST     /maps                          controllers.MapInfoController.newMap
 
 GET     /maps/:id/delete               controllers.MapInfoController.deleteMap(id: Long)
 
+GET     /maps/delete/:name              controllers.MapInfoController.deleteMap_url(name: String)
+
 GET    /maps/:id/update                controllers.UpdateRequestsController.updateMap(id: Long)
 
-GET     /maps/update/*map_name         controllers.UpdateRequestsController.updateMapWithName(map_name)
+GET     /maps/update/:map_name         controllers.UpdateRequestsController.updateMap_url(map_name: String)
 
 GET    /maps/updateall                 controllers.UpdateRequestsController.updateAll
 

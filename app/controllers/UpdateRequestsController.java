@@ -67,15 +67,6 @@ public class UpdateRequestsController extends Controller {
         );
     }
 
-    public Result updateMapWithName(String map_name) {
-        map_name=map_name.replace(".mwm","");
-        MapInfo map = MapInfo.find.where().like("name", "%"+map_name+"%").findList().get(0);
-        if (map==null) {
-            return notFound("<h2>Not found map with this name<h2>").as("text/html");
-        }
-        return updateMap(map.id);
-    }
-
     public Result updateMap(Long id) {
         MapInfo map=MapInfo.find.byId(id);
         if (map==null) {
@@ -110,6 +101,16 @@ public class UpdateRequestsController extends Controller {
             updateMap_logic(map,servers,version_outdated);
         }
         Logger.debug("---Global sync ended---");
+    }
+
+    public Result updateMap_url(String map_name) {
+        map_name=map_name.replace(".mwm","");
+        map_name=map_name.replaceAll("%20"," ");
+        MapInfo map = MapInfo.find.where().like("name", "%"+map_name+"%").findList().get(0);
+        if (map==null) {
+            return notFound("<h2>Not found map with this name<h2>").as("text/html");
+        }
+        return updateMap(map.id);
     }
 
     ///

@@ -74,12 +74,6 @@ public class MapInfoController extends Controller {
         }
     }
 
-    public Result newMap_url(String name){
-        name=name.replace(".mwm","");
-        addNewMapInfo(name);
-        return redirect(routes.MapInfoController.maps());
-    }
-
     public Result deleteMap(Long id) {
         MapInfo map = getMapById(id);
         if (map==null) {
@@ -128,6 +122,23 @@ public class MapInfoController extends Controller {
             return downloadMap(map.id);
         }
         return notFound("<h2>Not found map file with this name<h2>").as("text/html");
+    }
+
+    public Result newMap_url(String name){
+        name=name.replace(".mwm","");
+        name=name.replaceAll("%20"," ");
+        addNewMapInfo(name);
+        return redirect(routes.MapInfoController.maps());
+    }
+
+    public Result deleteMap_url(String name) {
+        name=name.replace(".mwm","");
+        name=name.replaceAll("%20"," ");
+        MapInfo map = MapInfo.find.where().like("name", "%"+name+"%").findList().get(0);
+        if (map==null) {
+            return redirect(routes.MapInfoController.maps());
+        }
+        return deleteMap(map.id);
     }
 
     ///
