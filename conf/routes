@@ -3,7 +3,7 @@
 # ~~~~
 
 # An example controller showing a sample home page
-GET     /                               controllers.HomeController.index
+GET     /                               controllers.MapInfoController.maps
 
 GET     /maps                           controllers.MapInfoController.maps
 
@@ -13,7 +13,9 @@ GET     /maps/:id/delete               controllers.MapInfoController.deleteMap(i
 
 GET    /maps/:id/update                controllers.UpdateRequestsController.updateMap(id: Long)
 
-GET    /maps/update                    controllers.UpdateRequestsController.updateAll
+GET     /maps/update/*map_name         controllers.UpdateRequestsController.updateMapWithName(map_name)
+
+GET    /maps/updateall                 controllers.UpdateRequestsController.updateAll
 
 GET    /maps/:id/download              controllers.MapInfoController.downloadMap(id: Long)
 
@@ -23,12 +25,5 @@ GET    /maps/addall                    controllers.MapInfoController.addAllMapIn
 
 GET    /maps/addrussia                 controllers.MapInfoController.addRussiaMapInfo
 
-GET    /maps/android/:inp_version/:file    controllers.MapInfoController.sendByRequest(inp_version: String,file: String)
+GET    /maps/android/:file    controllers.MapInfoController.sendByRequest(file: String)
 
-# An example controller showing how to use dependency injection
-GET     /count                      controllers.CountController.count
-# An example controller showing how to write asynchronous code
-GET     /message                    controllers.AsyncController.message
-
-# Map static resources from the /public folder to the /assets URL path
-GET     /assets/*file               controllers.Assets.versioned(path="/public", file: Asset)

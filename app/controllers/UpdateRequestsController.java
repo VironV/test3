@@ -47,36 +47,46 @@ public class UpdateRequestsController extends Controller {
     MapInfoController MIC;
     @Inject WSClient ws;
     @Inject Materializer materializer;
-    final static String meta_serv_url = "http://metaserver-resources.mapswithme.com/server_data/active_servers";
-    final static String contries_file_url = "https://raw.githubusercontent.com/mapsme/omim/master/data/countries.txt";
-    final static String files_location = "C:\\Users\\Viron_2\\IdeaProjects\\test3\\public\\maps\\";
-    final static String files_format = ".mwm";
+    public String version;
     final static SimpleDateFormat formatter = new SimpleDateFormat("d MM yyyy HH:mm:ss 'GMT'");
     final static SimpleDateFormat small_formatter = new SimpleDateFormat("yyMMdd");
 
     @Inject public UpdateRequestsController(ActorSystem system) {
-        MIC=new MapInfoController(system);
+        version="161105";
+        MIC=new MapInfoController();
 
+        system.scheduler().schedule(
+                Duration.create(0, TimeUnit.MILLISECONDS), //Initial delay 0 milliseconds
+                Duration.create(60, TimeUnit.MINUTES),     //Frequency 5 minutes
+                new Runnable() {
+                    public void run() {
+                        globalSync();
+                    }
+                },
+                system.dispatcher()
+        );
+    }
+
+    public Result updateMapWithName(String map_name) {
+        map_name=map_name.replace(".mwm","");
+        MapInfo map = MapInfo.find.where().like("name", "%"+map_name+"%").findList().get(0);
+        if (map==null) {
+            return notFound("<h2>Not found map with this name<h2>").as("text/html");
+        }
+        return updateMap(map.id);
     }
 
     public Result updateMap(Long id) {
-        MapInfo map = MIC.getMapById(id);
+        MapInfo map=MapInfo.find.byId(id);
         if (map==null) {
             Logger.debug("There is no map with this id");
             return redirect(routes.MapInfoController.maps());
         }
-
         List<String> servlist=getServersList();
-        String serv_url=getAvailableServer(servlist,map.name);
-        if (serv_url==null){
-            unSuccessSync(map);
-        } else {
-            if (outdated(serv_url,map)) {
-                uploadMap(serv_url, map);
-            } else {
-                unNeccessarySync(map);
-            }
-        }
+        boolean version_outdated=checkVersion();
+
+        updateMap_logic(map,servlist,version_outdated);
+
         return redirect(routes.MapInfoController.maps());
     }
 
@@ -85,53 +95,62 @@ public class UpdateRequestsController extends Controller {
         return redirect(routes.MapInfoController.maps());
     }
 
-    ///
-    // Logic
-    ///
-
     public void globalSync() {
         Logger.debug("---Global sync began---");
+        boolean version_outdated=checkVersion();
 
-        CompletionStage<WSResponse> jsonPromise= ws.url(contries_file_url).get();
-        JsonNode info_file = jsonPromise.toCompletableFuture().join().asJson();
-        String last_version= info_file.path("v").asText();
-
-        Date our_date= parseToDate_small(MIC.version);
-        Date their_date= parseToDate_small(last_version);
-
-        // check version
-        boolean version_outdated=their_date.after(our_date);
-        if (version_outdated) {
-            MIC.version=last_version;
-            Logger.debug("Our main versin is outdated");
-        } else {
-            Logger.debug("Main version is up-to-date");
-        }
         // Get servers
         List<String> servers = getServersList();
 
         // Updating
         List<MapInfo> maps = MIC.getAllMaps();
         for (MapInfo map: maps) {
-            // get server with 200
-            String working_server=getAvailableServer(servers,map.name);
-
-            if (working_server==null) {
-                Logger.debug("No availave server for " + map.name);
-                unSuccessSync(map);
-            } else {
-                if (!map.is_uploaded || version_outdated || !MIC.file_downloaded(map.name)) {
-                    Logger.debug("Updating " + map.name);
-                    uploadMap(working_server,map);
-                } else {
-                    Logger.debug("No need for update to " + map.name);
-                    unNeccessarySync(map);
-                }
-            }
+            updateMap_logic(map,servers,version_outdated);
         }
-
         Logger.debug("---Global sync ended---");
     }
+
+    ///
+    // Logic
+    ///
+
+    public void updateMap_logic(MapInfo map, List<String> servers,boolean version_outdated) {
+        // get server with 200
+        String working_server=getAvailableServer(servers,map.name);
+
+        if (working_server==null) {
+            Logger.debug("No availave server for " + map.name);
+            unSuccessSync(map);
+        } else {
+            if (!map.is_uploaded || version_outdated || !MIC.file_downloaded(map.name)) {
+                Logger.debug("Updating " + map.name);
+                uploadMap(working_server,map);
+            } else {
+                Logger.debug("No need for update to " + map.name);
+                unNeccessarySync(map);
+            }
+        }
+    }
+
+    public boolean checkVersion() {
+        CompletionStage<WSResponse> jsonPromise= ws.url(MIC.contries_file_url).get();
+        JsonNode info_file = jsonPromise.toCompletableFuture().join().asJson();
+        String last_version= info_file.path("v").asText();
+
+        Date our_date= parseToDate_small(version);
+        Date their_date= parseToDate_small(last_version);
+
+        // check version
+        boolean version_outdated=their_date.after(our_date);
+        if (version_outdated) {
+            version = last_version;
+            Logger.debug("Our main version is outdated");
+            return true;
+        }
+        Logger.debug("Main version is up-to-date");
+        return false;
+    }
+
 
     private boolean outdated(String url,MapInfo map){
         if (map.upload_date==null) {
@@ -153,7 +172,7 @@ public class UpdateRequestsController extends Controller {
     public void uploadMap(String url, MapInfo map) {
         String map_name=map.name;
         try {
-            File file = new File(files_location + map_name + files_format);
+            File file = new File(MIC.files_location + map_name + MIC.files_format);
 
             FileOutputStream outputStream = new FileOutputStream(file);
 
@@ -199,24 +218,22 @@ public class UpdateRequestsController extends Controller {
     ///
 
     private List<String> getServersList() {
-        String url =meta_serv_url;
+        String url =MIC.meta_serv_url;
         CompletionStage<WSResponse> request = ws.url(url).get();
         WSResponse response=request.toCompletableFuture().join();
         List<String> servlist=parseToList(response.getBody());
 
         for (String serv: servlist) {
             Logger.debug("Working server: " + serv);
-
         }
         return servlist;
         //checkServers(servlist);
     }
 
-
     private String getAvailableServer(List<String> servlist, String map_name) {
         String working_serv=null;
         for (String url: servlist) {
-            String serv_url=(url + "android/" + MIC.version + "/" + map_name + ".mwm").replaceAll(" ","%20");
+            String serv_url=(url + "android/" + version + "/" + map_name + ".mwm").replaceAll(" ","%20");
             CompletionStage<WSResponse> responsePromise = ws.url(serv_url).get();
             int response_status = responsePromise.toCompletableFuture().join().getStatus();
             if (response_status==200) {

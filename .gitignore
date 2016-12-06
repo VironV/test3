@@ -15,7 +15,7 @@ bin/
 /logs/
 /modules
 /project/target
-/public/maps
+/maps
 /target
 tmp/
 test-result

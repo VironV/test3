@@ -48,31 +48,15 @@ public class MapInfoController extends Controller {
     @Inject FormFactory formFactory;
 
     static Form<FormData> myform;
-    public String version;
-    final static String meta_serv_url = "http://metaserver-resources.mapswithme.com/server_data/active_servers";
-    final static String contries_file_url = "https://raw.githubusercontent.com/mapsme/omim/master/data/countries.txt";
-    final static String files_location = "C:\\Users\\Viron_2\\IdeaProjects\\test3\\public\\maps\\";
-    final static String files_format = ".mwm";
+    final String meta_serv_url = "http://metaserver-resources.mapswithme.com/server_data/active_servers";
+    final String contries_file_url = "https://raw.githubusercontent.com/mapsme/omim/master/data/countries.txt";
+    final String files_location = "C:\\Users\\Viron_2\\IdeaProjects\\test3\\maps\\";
+    final String files_format = ".mwm";
 
-    @Inject public MapInfoController(ActorSystem system) {
-        version="161105";
-
-        /*
-        system.scheduler().schedule(
-                Duration.create(9000, TimeUnit.MILLISECONDS), //Initial delay 0 milliseconds
-                Duration.create(1, TimeUnit.HOURS),     //Frequency 5 minutes
-                new Runnable() {
-                    public void run() {
-                        UpdateRequestsController.globalSync();
-                    }
-                },
-                system.dispatcher()
-        );
-        */
-    }
+    @Inject public MapInfoController() {}
 
     ///
-    /// direct routesactions
+    /// main actions
     ///
 
     public Result maps(){
@@ -109,31 +93,6 @@ public class MapInfoController extends Controller {
         return redirect(routes.MapInfoController.maps());
     }
 
-    public Result downloadMap(Long id) {
-        MapInfo map=getMapById(id);
-        if (map!=null && (map.is_uploaded && file_downloaded(map.name))){
-            MapInfo map_upd=new MapInfo(map.name,map.is_uploaded,map.upload_date,map.sync_date,map.sync_success,map.downloads_count+1);
-            map_upd.id=map.id;
-            map_upd.update();
-            map.update();
-            return ok(new File(files_location + map_upd.name + files_format));
-        } else {
-            flash("error", "This map is not uploaded to server yet");
-            return redirect(routes.MapInfoController.maps());
-        }
-    }
-
-    public Result sendByRequest(String inp_ver, String file) {
-        String map_name=file.replace(".mwm","");
-        if (inp_ver.equals(version) && file_downloaded(map_name)) {
-            MapInfo map=getMapWithName(map_name);
-            if (map!=null) {
-                return downloadMap(map.id);
-            }
-        }
-        return notFound("<h2>Not found map file with this version and name<h2>").as("text/html");
-    }
-
     public Result deleteAll() {
         List<MapInfo> maps = getAllMaps();
         for (MapInfo map: maps) {
@@ -143,20 +102,32 @@ public class MapInfoController extends Controller {
         return redirect(routes.MapInfoController.maps());
     }
 
-    public void addNewMapInfo(String name) {
-        MapInfo map=new MapInfo(name,false,null,null,false,0);
-        try {
-            map.save();
-            Logger.debug("Created map info: " + map.name);
-            //updateMap(map.id);
-        } catch (Throwable e) {
-            flash("error", "Map with same name already exists");
+    public Result downloadMap(Long id) {
+        MapInfo map=getMapById(id);
+        if (map!=null && (map.is_uploaded && file_downloaded(map.name))){
+            MapInfo map_upd=new MapInfo(map.name,map.is_uploaded,map.upload_date,map.sync_date,map.sync_success,map.downloads_count+1);
+            map_upd.id=map.id;
+            map_upd.update();
+            return ok(new File(files_location + map_upd.name + files_format));
+        } else {
+            flash("error", "This map is not uploaded to server yet");
+            return redirect(routes.MapInfoController.maps());
         }
     }
 
-    //delete all map info before using
-    //TODO: create "refresh maps names" function for updating names without deleting statistic
-    //now renaming possible only with pure code
+    public Result sendByRequest(String file) {
+        String map_name=file.replace(files_format,"");
+        MapInfo map=getMapWithName(map_name);
+        if (map!=null) {
+            return downloadMap(map.id);
+        }
+        return notFound("<h2>Not found map file with this name<h2>").as("text/html");
+    }
+
+    ///
+    /// Adding all (or russian) map info in database - without downloading files yet
+    ///
+
     public Result addAllMapInfo() {
         CompletionStage<WSResponse> jsonPromise= ws.url(contries_file_url).get();
         JsonNode info_file = jsonPromise.toCompletableFuture().join().asJson();
@@ -219,6 +190,17 @@ public class MapInfoController extends Controller {
     /// Helpers
     ///
 
+    public void addNewMapInfo(String name) {
+        MapInfo map=new MapInfo(name,false,null,null,false,0);
+        try {
+            map.save();
+            Logger.debug("Created map info: " + map.name);
+            //updateMap(map.id);
+        } catch (Throwable e) {
+            flash("error", "Map with same name already exists");
+        }
+    }
+
     public boolean file_downloaded(String map_name) {
         File file = new File(files_location + map_name + files_format);
         if (file.exists()) {
@@ -261,7 +243,9 @@ public class MapInfoController extends Controller {
         return map;
     }
 
-
+    ///
+    /// Form
+    ///
 
     public static class FormData {
         private String name;
